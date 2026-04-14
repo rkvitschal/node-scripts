@@ -71,13 +71,8 @@ pool.on('remove', (client) => {
  * @returns {Promise} - Retorna uma Promise que resolve com o resultado da query.
  */
 async function query(text, params) {
-  const client = await pool.connect();
-  try {
-    const res = await client.query(text, params);
-    return res;
-  } finally {
-    client.release();
-  }
+  // pool.query é um atalho seguro do driver
+  return pool.query(text, params);
 }
 
 
@@ -165,6 +160,41 @@ function releaseClient(client) {
 }
 
 /**
+ * WRAPPER DE TRANSAÇÃO
+ * Executa uma série de queries dentro de uma transação segura.
+ * Gerencia automaticamente o BEGIN, COMMIT, ROLLBACK e RELEASE.
+ * * Uso:
+ * await executeTransaction(async (client) => {
+ * await client.query('INSERT INTO ...');
+ * await client.query('UPDATE ...');
+ * });
+ * 
+ * @param {Function} callback - Função assíncrona que contém a lógica da transação. 
+ *                              Recebe o `client` do pool como único argumento.
+ * @returns {Promise<any>} O resultado retornado pelo callback em caso de sucesso.
+ * @throws {Error} Re-lança qualquer erro ocorrido durante a execução para permitir tratamento externo.
+ */
+async function executePgTransaction(callback) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Executa a lógica do usuário passando o cliente da transação
+    const result = await callback(client);
+
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    // Se der qualquer erro, desfaz tudo automaticamente
+    await client.query('ROLLBACK');
+    throw error; // Re-lança o erro para quem chamou saber que falhou
+  } finally {
+    // Garante que a conexão volta pro pool, aconteça o que acontecer
+    client.release();
+  }
+}
+
+/**
  * Retorna estatísticas sobre o estado atual do pool de conexões.
  * @returns {object} Um objeto com as seguintes propriedades:
  *  - totalCount: Número total de clientes (conexões) no pool (ociosos + em uso).
@@ -192,5 +222,6 @@ export {
   commitTransaction,
   rollbackTransaction,
   releaseClient,
+  executePgTransaction,
   getPoolStatus
 };
