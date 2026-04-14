@@ -84,3 +84,13 @@ const valor = await redisClient.get('chave');
 ```
 
 Podemos também usar comandos como PUB/SUB, e entre outros comandos do Redis, que não vou exemplificar todos nesse arquivo.
+
+
+#Passport Cookie + Token JWT
+Nesse exemplo de implantação utilizo Passport com autenticação local (Banco de dados) ou token JWT e controle de sessão com Cookie, utilizo as implantações de PG e Redis também existente nesses modelos.
+
+```bash
+npm install pg ioredis express express-session passport passport-jwt passport-local jsonwebtoken connect-redis@7 argon2 cors
+```
+
+Exemplo de implantação no arquivo exemplos/exemploPassport.js
