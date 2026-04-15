@@ -11,7 +11,11 @@ export default new JwtStrategy(opts, async (jwt_payload, done) => {
   try {
     // O payload é o que você colocou dentro do token (ex: { sub: user.id })
     // Você pode buscar o usuário no banco aqui, ou apenas confiar no payload
-    const user = { id: jwt_payload.sub, role: jwt_payload.role }; 
+    const user = {
+      id: jwt_payload.sub,
+      //role: jwt_payload.role
+      exp: jwt_payload.exp
+    };
 
     if (user) {
       return done(null, user);
